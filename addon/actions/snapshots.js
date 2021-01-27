@@ -48,6 +48,8 @@ async function createSnapshot() {
     windows[windowId] = { items }
   }
 
+  // TODO: Implement default sync toggle
+  console.log("TEST")
   currentSnapshot = {
     id: Math.random()
       .toString(16)
@@ -56,6 +58,7 @@ async function createSnapshot() {
     containersById,
     panels: panels_v4,
     windows,
+    synced: false
   }
 
   let { snapshots_v4 } = await browser.storage.local.get({ snapshots_v4: [] })

@@ -21,6 +21,8 @@
     .snapshot
       .ctrls(@wheel="onTimelineWheel" :data-empty="!activeSnapshot")
         .title(v-if="activeSnapshot") {{activeSnapshot.date}} - {{activeSnapshot.time}}
+        .text(v-if="activeSnapshot") {{ activeSnapshot.synced ? t('snapshot.sync_status_true') : t('snapshot.sync_status_false') }}
+        .btn(v-if="activeSnapshot" @click="syncSnapshot(activeSnapshot)") {{t('snapshot.btn_sync')}}
         .btn(v-if="activeSnapshot" @click="applySnapshot(activeSnapshot)") {{t('snapshot.btn_apply')}}
         .btn.-warn(v-if="activeSnapshot" @click="removeSnapshot(activeSnapshot)") {{t('snapshot.btn_remove')}}
       .snapshot-content(v-if="activeSnapshot")
@@ -306,6 +308,16 @@ export default {
       } else if (this.snapshots[indexLocal - 1]) {
         this.activeSnapshot = this.snapshots[indexLocal - 1]
       }
+    },
+
+    async syncSnapshot(snapshot) {
+      let { snapshots_v4 } = await browser.storage.local.get({ snapshots_v4: [] })
+
+      const indexStored = snapshots_v4.findIndex(s => s.id === snapshot.id)
+      if (indexStored === -1) return
+
+      console.log(snapshots_v4[indexStored])
+      console.log("Snapshot synced!")
     },
 
     getCtrColor(id) {
