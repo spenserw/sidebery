@@ -15,14 +15,14 @@
           :data-active="activeSnapshot.id === s.id"
           @click="(activeSnapshot = s)")
           .date-time(v-if="s.type === 'base'") {{s.date}} - {{s.time}}
+          .badge(v-if="s.synced") {{t('snapshot.sync_badge_label')}}
           .info(v-if="s.type === 'base'") {{getSnapInfo(s)}}
           .info(v-if="s.type === 'layer'") {{t('snapshot.event.' + s.event)}}
           .date-time(v-if="s.type === 'layer'") {{s.time}}
     .snapshot
       .ctrls(@wheel="onTimelineWheel" :data-empty="!activeSnapshot")
         .title(v-if="activeSnapshot") {{activeSnapshot.date}} - {{activeSnapshot.time}}
-        .text(v-if="activeSnapshot") {{ activeSnapshot.synced ? t('snapshot.sync_status_true') : t('snapshot.sync_status_false') }}
-        .btn(v-if="activeSnapshot" @click="syncSnapshot(activeSnapshot)") {{t('snapshot.btn_sync')}}
+        ToggleField( v-if="activeSnapshot" label="snapshot.sync_toggle_label" :key="activeSnapshot.synced" :value="activeSnapshot.synced" @input="toggleSnapshotSync(activeSnapshot)" )
         .btn(v-if="activeSnapshot" @click="applySnapshot(activeSnapshot)") {{t('snapshot.btn_apply')}}
         .btn.-warn(v-if="activeSnapshot" @click="removeSnapshot(activeSnapshot)") {{t('snapshot.btn_remove')}}
       .snapshot-content(v-if="activeSnapshot")
@@ -96,6 +96,7 @@ import { DEFAULT_TABS_PANEL } from '../../../addon/defaults'
 import EventBus from '../../event-bus'
 import State from '../store/state'
 import Actions from '../actions'
+import ToggleField from '../../components/toggle-field'
 
 const SCROLL_CONF = { behavior: 'smooth', block: 'center' }
 const DEFAULT_CTR = {
@@ -106,6 +107,8 @@ const DEFAULT_CTR = {
 }
 
 export default {
+  components: { ToggleField },
+
   data() {
     return {
       snapshots: [],
@@ -115,6 +118,7 @@ export default {
 
   async created() {
     let parsedSnapshots = []
+
     let { snapshots_v4 } = await browser.storage.local.get({ snapshots_v4: null })
 
     // Watch 'activeSnapshot' change and scroll to changed target
@@ -310,14 +314,23 @@ export default {
       }
     },
 
-    async syncSnapshot(snapshot) {
+    async toggleSnapshotSync(snapshot) {
       let { snapshots_v4 } = await browser.storage.local.get({ snapshots_v4: [] })
 
       const indexStored = snapshots_v4.findIndex(s => s.id === snapshot.id)
       if (indexStored === -1) return
 
-      console.log(snapshots_v4[indexStored])
-      console.log("Snapshot synced!")
+	  let currentSnapshot = snapshots_v4[indexStored]
+	  currentSnapshot.synced = !currentSnapshot.synced
+
+      await browser.storage.local.set({ snapshots_v4 })
+
+      let indexLocal = this.snapshots.findIndex(s => s.id === snapshot.id)
+      if (indexLocal === -1) return
+	  this.snapshots[indexLocal].synced = currentSnapshot.synced
+
+	  this.activeSnapshot.synced = currentSnapshot.synced
+	  this.$forceUpdate()
     },
 
     getCtrColor(id) {
